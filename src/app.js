@@ -2,50 +2,46 @@ import * as yup from 'yup';
 import onChange from 'on-change';
 import view from './view.js';
 
-const schema = yup.string().url().required();
+yup.setLocale({
+  string: {
+    url: 'errMessages.notValidUrl',
+  },
+});
 
-const validate = (url) => schema.validate(url);
-
-export default () => {
-  const state = {
-    isValid: null,
-    feeds: [],
-    errMessage: '',
-  };
-
-  const elements = {
-    form: document.querySelector('.rss-form'),
-    feedback: document.querySelector('.feedback'),
-    input: document.getElementById('url-input'),
-  };
-
-  const watchedState = onChange(state, view(state, elements));
-
-  elements.form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const url = formData.get('url');
-    validate(url)
-      .then(() => {
-        if (!state.feeds.includes(url)) {
-          watchedState.feeds.push(url);
-          watchedState.errMessage = '';
-          watchedState.isValid = true;
-          
-        } else {
-          watchedState.errMessage = 'RSS уже существует';
-          watchedState.isValid = false;
-        }
-      })
-      .catch((e) => {
-        watchedState.errMessage = 'Ссылка должна быть валидным URL';
-        watchedState.isValid = false;
-      });
-    
+const schema = yup.string().url().required()
+  .test({
+    name: 'isUniq',
+    message: 'errMessages.exist',
+    test: (value, testContext) => {
+      return Promise.resolve(!testContext.options.includes(value))
+    }
   });
+
+const validate = (url, urlsArray) => schema.validate(url, urlsArray);
+
+const FORMSTATES = {
+  filling: 'filling',
+  sending: 'sending',
+  finished: 'finished',
+  failed: 'failed'
+}
+
+const app = (i18nextInstance) => {
+  console.log('da')
+  const state = {
+    form: {
+      state: FORMSTATES.filling,
+    },
+    feeds: ['https://ru.hexlet.io/lessons.rss']
+  };
+
+  validate('https://ru.hexlet.io/lessons.rss', state.feeds)
+    .then(console.log)
+    .catch((e) => {
+      console.dir(e);
+      console.log(e.errors.map(key => i18nextInstance.t(key)));
+    })
+
 };
 
-
-// <p class="feedback m-0 position-absolute small text-danger">Ссылка должна быть валидным URL</p>
-// <p class="feedback m-0 position-absolute small text-success">RSS успешно загружен</p>
-// <p class="feedback m-0 position-absolute small text-success text-danger">RSS уже существует</p>
+export default app;
