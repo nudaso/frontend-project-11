@@ -3,45 +3,68 @@ import onChange from 'on-change';
 import view from './view.js';
 
 yup.setLocale({
+  mixed: {
+    notOneOf: 'errMessages.exist'
+  },
   string: {
     url: 'errMessages.notValidUrl',
   },
 });
 
-const schema = yup.string().url().required()
-  .test({
-    name: 'isUniq',
-    message: 'errMessages.exist',
-    test: (value, testContext) => {
-      return Promise.resolve(!testContext.options.includes(value))
-    }
-  });
 
-const validate = (url, urlsArray) => schema.validate(url, urlsArray);
+const validate = (url, urlsArray) => {
+  const schema = yup.string().url().notOneOf(urlsArray).required();
+  return schema.validate(url);
+};
 
-const FORMSTATES = {
+const FORMPROCESSSTATES = {
   filling: 'filling',
   sending: 'sending',
   finished: 'finished',
   failed: 'failed'
-}
+};
 
 const app = (i18nextInstance) => {
-  console.log('da')
   const state = {
     form: {
-      state: FORMSTATES.filling,
+      processState: FORMPROCESSSTATES.filling,
+      valid: null
     },
-    feeds: ['https://ru.hexlet.io/lessons.rss']
+    uiState: {
+      form: {
+        messageKey: null
+      }
+    },
+    feeds: []
   };
 
-  validate('https://ru.hexlet.io/lessons.rss', state.feeds)
-    .then(console.log)
-    .catch((e) => {
-      console.dir(e);
-      console.log(e.errors.map(key => i18nextInstance.t(key)));
-    })
+  const elements = {
+    form: document.querySelector('.rss-form'),
+    feedback: document.querySelector('.feedback'),
+    input: document.getElementById('url-input'),
+  };
 
+  const watchedState = onChange(state, view(state, elements, i18nextInstance));
+
+  
+  elements.form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const url = formData.get('url');
+    validate(url, state.feeds)
+      .then((url) => {
+        watchedState.feeds.push(url);
+        watchedState.uiState.form.messageKey = 'successMessage';
+        watchedState.form.valid = true;
+        watchedState.form.processState = FORMPROCESSSTATES.sending;
+      })
+      .catch((e) => {
+        const key = e.errors[0]
+        watchedState.uiState.form.messageKey = key;
+        watchedState.form.valid = false;
+      });
+
+  });
 };
 
 export default app;
