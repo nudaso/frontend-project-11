@@ -11,7 +11,8 @@ export default {
     errMessages: {
       notValidUrl: 'Ссылка должна быть валидным URL',
       notValidRss: 'Ресурс не содержит валидный RSS',
-      exist: 'RSS уже существует'
+      exist: 'RSS уже существует',
+      networkErr: 'Ошибка сети',
     },
     successMessage: 'RSS успешно загружен'
   },
