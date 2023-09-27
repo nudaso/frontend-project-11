@@ -77,6 +77,8 @@ const handlerFormState = (state, elements, i18nextInstance, value, preValue) => 
     elements.feedback.classList.add('text-success');
     renderFeeds(state, elements);
     renderPosts(state, elements);
+    elements.input.value = '';
+    elements.input.focus();
   }
 }
 
