@@ -75,18 +75,20 @@ const app = (i18nextInstance) => {
         const rssObj = parsRssStream(rssString);
 
         if (rssObj) {
-          watchedState.feedLinks.push(url);
-          watchedState.feeds.push({
+          watchedState.feedLinks.unshift(url);
+          watchedState.feeds.unshift({
             ...rssObj.feed,
             url
           });
-          watchedState.posts.push(...rssObj.posts);
+          watchedState.posts.unshift(...rssObj.posts);
           watchedState.form.messageObj = {
             messageKey: 'successMessage'
           };
           watchedState.form.state = FORMPROCESSSTATES.finished;
           return;
         }
+
+
 
         throw new Error('errMessages.notValidRss');
       })
