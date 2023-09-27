@@ -19,16 +19,16 @@ export const parsRssStream = (rssString) => {
         for: channelId,
         guid: item.querySelector('guid').textContent,
         title: item.querySelector('title').textContent,
-        descriprion: item.querySelector('description').textContent,
+        description: item.querySelector('description').textContent,
         pubDate: item.querySelector('pubDate').textContent,
         link: item.querySelector('link').textContent
       }
     ));
-  
+    
   return {
     feed: {
       title: channelTitle,
-      descriprion: channelDescription,
+      description: channelDescription,
       id: channelId
     },
     posts

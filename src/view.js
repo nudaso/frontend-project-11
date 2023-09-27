@@ -12,15 +12,19 @@ const renderFeeds = (state, elements) => {
     const p = document.createElement('p');
     p.classList.add(...'m-0 small text-black-50'.split(' '));
     p.textContent = feed.description;
-
+    
     feedEl.append(header, p);
     return feedEl;
   });
 
-  elements.feeds.innerHtml = '';
-  const cardBody = document.createElement('div');
+  elements.feeds.innerHTML = '';
   
-  elements.feeds.append(...feedEls);
+  const feedsContainer = document.createElement('div');
+  feedsContainer.setAttribute('class', 'card border-0');
+  feedsContainer.innerHTML = `<div class="card-body"><h2 class="card-title h4">Фиды</h2></div><ul class="list-group border-0 rounded-0"></ul>`
+  console.log(feedsContainer);
+  feedsContainer.querySelector('ul').append(...feedEls);
+  elements.feeds.append(feedsContainer);
 };
 
 const renderPosts = (state, elements) => {
@@ -46,8 +50,12 @@ const renderPosts = (state, elements) => {
     return postEl;
   });
 
-  elements.posts.innerHtml = '';
-  elements.posts.append(...postEls);
+  elements.posts.innerHTML = '';
+  const postsContainer = document.createElement('div');
+  postsContainer.setAttribute('class', 'card border-0');
+  postsContainer.innerHTML = `<div class="card-body"><h2 class="card-title h4">Посты</h2></div><ul class="list-group border-0 rounded-0"></ul>`;
+  postsContainer.querySelector('ul').append(...postEls);
+  elements.posts.append(postsContainer);
 }
 
 const handlerFormState = (state, elements, i18nextInstance, value, preValue) => {
@@ -67,7 +75,6 @@ const handlerFormState = (state, elements, i18nextInstance, value, preValue) => 
 
     elements.feedback.classList.remove('text-danger');
     elements.feedback.classList.add('text-success');
-    console.log(state);
     renderFeeds(state, elements);
     renderPosts(state, elements);
   }
