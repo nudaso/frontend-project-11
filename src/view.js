@@ -75,8 +75,8 @@ const handlerFormState = (state, elements, i18nextInstance, value, preValue) => 
 
     elements.feedback.classList.remove('text-danger');
     elements.feedback.classList.add('text-success');
-    renderFeeds(state, elements);
-    renderPosts(state, elements);
+    // renderFeeds(state, elements);
+    // renderPosts(state, elements);
     elements.input.value = '';
     elements.input.focus();
   }
@@ -92,6 +92,14 @@ export default (state, elements, i18nextInstance) => (path, value, preValue) => 
       if (value !== null) {
         elements.feedback.textContent = i18nextInstance.t(value.messageKey);
       }
+      break;
+    };
+    case 'posts': {
+      renderPosts(state, elements);
+      break;
+    };
+    case 'feeds': {
+      renderFeeds(state, elements);
       break;
     };
     default: {
