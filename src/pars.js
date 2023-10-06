@@ -1,26 +1,22 @@
-import _ from 'lodash';
-
-export const parsRssStream = (rssString) => {
+const parsRssStream = (rssString) => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(rssString, `application/xml`);
-  const rssDoc = doc.querySelector('rss');
+  const rssNode = doc.querySelector('rss');
+  const errNode = doc.querySelector("parsererror");
 
-  if (rssDoc === null) {
-    return rssDoc;
+  if (errNode) {
+    throw new Error('errMessages.notValidRss');
   }
   
-  const channel = rssDoc.querySelector('channel');
+  const channel = rssNode.querySelector('channel');
   const channelTitle = channel.querySelector('title').textContent;
   const channelDescription = channel.querySelector('description').textContent;
-  const channelId = _.uniqueId();
+  
   const posts = [...channel.querySelectorAll('item')]
     .map((item) => (
       {
-        for: channelId,
-        guid: item.querySelector('guid').textContent,
         title: item.querySelector('title').textContent,
         description: item.querySelector('description').textContent,
-        pubDate: item.querySelector('pubDate').textContent,
         link: item.querySelector('link').textContent
       }
     ));
@@ -29,8 +25,9 @@ export const parsRssStream = (rssString) => {
     feed: {
       title: channelTitle,
       description: channelDescription,
-      id: channelId
     },
     posts
   };
 };
+
+export default parsRssStream;

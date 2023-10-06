@@ -2,14 +2,21 @@ import * as yup from 'yup';
 import onChange from 'on-change';
 import view from './view.js';
 import axios from 'axios';
+import _ from 'lodash';
 import { FORMPROCESSSTATES } from './FORMPROCESSSTATES.js';
-import { parsRssStream } from './pars.js';
+import parsRssStream from './pars.js';
 
 const getIgnoreCORSUrl = (url) => `https://allorigins.hexlet.app/get?disableCache=true&url=${url}`;
 
-const getRssStringFromResponse = (response) => {
-  const {data: {contents: rssString}} = response;
-  return rssString;
+const sendRequest = (url) => {
+  return axios.get(getIgnoreCORSUrl(url))
+    .then((response) => {
+      const {data: {contents: rssString}} = response;
+      return rssString;
+    })
+    .catch(() => {
+      throw new Error('errMessages.networkErr');
+    });
 };
 
 yup.setLocale({
@@ -26,8 +33,52 @@ const validate = (url, urlsArray) => {
   return schema.validate(url);
 };
 
-const errorsHandler = (watchedState, error) => {
-  
+const payloadRss = (rssObj, url) => {
+  const {feed, posts} = rssObj;
+  const feedId = _.uniq();
+  const feedWithPayload = {
+    ...feed,
+    id: feedId,
+    feedUrl: url,
+  };
+
+  const postsWithPayload = posts.map((post) => {
+    return {
+      ...post,
+      feedId,
+      id: _.uniq()
+    };
+  });
+
+  return {
+    feed: feedWithPayload,
+    posts: postsWithPayload
+  }
+};
+
+const UPDATE_INTERVAL = 5000;
+
+const runUpdaterPosts = (state, watchedState) => {
+  setTimeout(() => {
+    const promises = state.feeds.map((feed) => {
+      const {id, feedUrl} = feed;
+      const postLinksForFeed = state.posts.filter(({feedId}) => feedId === id).map(({link}) => link);
+      return sendRequest(feedUrl)
+        .then(parsRssStream)
+        .then((rssObj) => {
+          const { posts: parsPosts } = rssObj;
+          const newPosts = parsPosts.filter(({link}) => postLinksForFeed.includes(link));
+          
+          if (!newPosts.length) {
+            return;
+          }
+          const { posts: payloadNewPosts } = payloadRss({feed, posts: newPosts}, feedUrl);
+          watchedState.posts.unshift(...payloadNewPosts);
+        })
+    });
+
+    const promise = Promise.all(promises).finally(() => runUpdaterPosts(state, watchedState), UPDATE_INTERVAL);
+  }, UPDATE_INTERVAL);
 }
 
 const app = (i18nextInstance) => {
@@ -55,42 +106,32 @@ const app = (i18nextInstance) => {
   };
 
   const watchedState = onChange(state, view(state, elements, i18nextInstance));
-  
+
+  runUpdaterPosts(state, watchedState);
+
   elements.form.addEventListener('submit', (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const url = formData.get('url');
-    validate(url, state.feedLinks)
+    const addedLinks = state.feeds.map((feed) => feed.feedUrl);
+    validate(url, addedLinks)
       .then((url) => {
         watchedState.form.state = FORMPROCESSSTATES.sending;
-
-        const response = axios.get(getIgnoreCORSUrl(url))
-          .catch((e) => {
-            throw new Error('errMessages.networkErr');
-          });
-        return response;
+        return sendRequest(url);
       })
-      .then((res) => {
-        const rssString = getRssStringFromResponse(res);
-        const rssObj = parsRssStream(rssString);
+      .then((data) => {
+        const rssObj = parsRssStream(data);
+        const {feed, posts} = payloadRss(rssObj, url);
+        
+        watchedState.feeds.unshift(feed);
+        watchedState.posts.unshift(...posts);
 
-        if (rssObj) {
-          watchedState.feedLinks.unshift(url);
-          watchedState.feeds.unshift({
-            ...rssObj.feed,
-            url
-          });
-          watchedState.posts.unshift(...rssObj.posts);
-          watchedState.form.messageObj = {
-            messageKey: 'successMessage'
-          };
-          watchedState.form.state = FORMPROCESSSTATES.finished;
-          return;
-        }
+        watchedState.form.messageObj = {
+          messageKey: 'successMessage'
+        };
 
-
-
-        throw new Error('errMessages.notValidRss');
+        watchedState.form.state = FORMPROCESSSTATES.finished;
+        console.log(state);
       })
       .catch((e) => {
         watchedState.form.messageObj = {
@@ -100,8 +141,8 @@ const app = (i18nextInstance) => {
         console.log('catch: ')
         console.dir(e)
       });
-
   });
+
 };
 
 export default app;

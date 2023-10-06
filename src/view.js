@@ -22,7 +22,7 @@ const renderFeeds = (state, elements) => {
   const feedsContainer = document.createElement('div');
   feedsContainer.setAttribute('class', 'card border-0');
   feedsContainer.innerHTML = `<div class="card-body"><h2 class="card-title h4">Фиды</h2></div><ul class="list-group border-0 rounded-0"></ul>`
-  console.log(feedsContainer);
+  
   feedsContainer.querySelector('ul').append(...feedEls);
   elements.feeds.append(feedsContainer);
 };
@@ -56,7 +56,7 @@ const renderPosts = (state, elements) => {
   postsContainer.innerHTML = `<div class="card-body"><h2 class="card-title h4">Посты</h2></div><ul class="list-group border-0 rounded-0"></ul>`;
   postsContainer.querySelector('ul').append(...postEls);
   elements.posts.append(postsContainer);
-}
+};
 
 const handlerFormState = (state, elements, i18nextInstance, value, preValue) => {
   if (value === FORMPROCESSSTATES.sending || preValue === FORMPROCESSSTATES.sending) {
@@ -93,6 +93,9 @@ export default (state, elements, i18nextInstance) => (path, value, preValue) => 
         elements.feedback.textContent = i18nextInstance.t(value.messageKey);
       }
       break;
+    };
+    default: {
+      
     }
   }
 };
