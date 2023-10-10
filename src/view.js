@@ -27,16 +27,23 @@ const renderFeeds = (state, elements) => {
   elements.feeds.append(feedsContainer);
 };
 
+const postBtnHandler = (post) => (e) => {
+
+}
+
 const renderPosts = (state, elements) => {
   const postEls = state.posts.map((post) => {
     const postEl = document.createElement('li');
     postEl.classList.add(...'list-group-item d-flex justify-content-between align-items-start border-0 border-end-0'.split(' '));
-
+    
     const a = document.createElement('a');
-    a.classList.add('fw-bold');
+    
+    const fontWeightStyle = state.uiState.posts.find((uiStatePost) => uiStatePost.id === post.id) ? 'fw-normal' : 'fw-bold';
+    a.classList.add(fontWeightStyle);
     a.setAttribute('href', post.link)
     a.setAttribute('target', '_blank')
     a.setAttribute('rel', 'noopener noreferrer');
+    a.setAttribute('data-id', post.id);
     a.textContent = post.title;
 
     const btn = document.createElement('btn');
@@ -44,6 +51,7 @@ const renderPosts = (state, elements) => {
     btn.setAttribute('type', 'button');
     btn.setAttribute('data-bs-toggle', 'modal');
     btn.setAttribute('data-bs-target', '#modal');
+    btn.setAttribute('data-id', post.id);
     btn.textContent = 'Просмотр';
 
     postEl.append(a, btn);
@@ -75,8 +83,7 @@ const handlerFormState = (state, elements, i18nextInstance, value, preValue) => 
 
     elements.feedback.classList.remove('text-danger');
     elements.feedback.classList.add('text-success');
-    // renderFeeds(state, elements);
-    // renderPosts(state, elements);
+
     elements.input.value = '';
     elements.input.focus();
   }
@@ -94,7 +101,8 @@ export default (state, elements, i18nextInstance) => (path, value, preValue) => 
       }
       break;
     };
-    case 'posts': {
+    case 'posts': 
+    case 'uiState.posts': {
       renderPosts(state, elements);
       break;
     };
@@ -102,6 +110,17 @@ export default (state, elements, i18nextInstance) => (path, value, preValue) => 
       renderFeeds(state, elements);
       break;
     };
+
+    case 'uiState.modal': {
+      const modalTitle =  elements.modal.querySelector('.modal-title');
+      modalTitle.textContent = state.uiState.modal.title;
+      
+      const modalBody = elements.modal.querySelector('.modal-body');
+      modalBody.textContent = state.uiState.modal.description;
+      
+      const modalAnchor = elements.modal.querySelector('a');
+      modalAnchor.setAttribute('href', state.uiState.modal.link);
+    }
     default: {
       
     }

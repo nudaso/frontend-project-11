@@ -9,7 +9,8 @@ import parsRssStream from './pars.js';
 const getIgnoreCORSUrl = (url) => `https://allorigins.hexlet.app/get?disableCache=true&url=${url}`;
 
 const sendRequest = (url) => {
-  return axios.get(getIgnoreCORSUrl(url))
+  const currentUrl = getIgnoreCORSUrl(url);
+  return axios.get(currentUrl)
     .then((response) => {
       const {data: {contents: rssString}} = response;
       return rssString;
@@ -35,7 +36,7 @@ const validate = (url, urlsArray) => {
 
 const payloadRss = (rssObj, url) => {
   const {feed, posts} = rssObj;
-  const feedId = _.uniq();
+  const feedId = _.uniqueId();
   const feedWithPayload = {
     ...feed,
     id: feedId,
@@ -46,7 +47,7 @@ const payloadRss = (rssObj, url) => {
     return {
       ...post,
       feedId,
-      id: _.uniq()
+      id: _.uniqueId()
     };
   });
 
@@ -67,7 +68,7 @@ const runUpdaterPosts = (state, watchedState) => {
         .then(parsRssStream)
         .then((rssObj) => {
           const { posts: parsPosts } = rssObj;
-          const newPosts = parsPosts.filter(({link}) => postLinksForFeed.includes(link));
+          const newPosts = parsPosts.filter(({link}) => !postLinksForFeed.includes(link));
           
           if (!newPosts.length) {
             return;
@@ -77,7 +78,10 @@ const runUpdaterPosts = (state, watchedState) => {
         })
     });
 
-    const promise = Promise.all(promises).finally(() => runUpdaterPosts(state, watchedState), UPDATE_INTERVAL);
+    const promise = Promise.all(promises).finally(() => {
+      runUpdaterPosts(state, watchedState)
+    }, UPDATE_INTERVAL);
+
   }, UPDATE_INTERVAL);
 }
 
@@ -88,13 +92,13 @@ const app = (i18nextInstance) => {
       messageObj: null,
     },
     uiState: {
-      form: {
+      posts: [],
+      modal: {
 
-      },
+      }
     },
     feeds: [],
     posts: [],
-    feedLinks: []
   };
 
   const elements = {
@@ -103,11 +107,33 @@ const app = (i18nextInstance) => {
     input: document.getElementById('url-input'),
     feeds: document.querySelector('.feeds'),
     posts: document.querySelector('.posts'),
+    modal: document.querySelector('.modal'),
   };
 
   const watchedState = onChange(state, view(state, elements, i18nextInstance));
 
   runUpdaterPosts(state, watchedState);
+  
+  elements.posts.addEventListener('click', (e) => {
+    const { id: postId } = e.target.dataset;
+    if (state.uiState.posts.find((postUi) => postUi.id === postId)) {
+      return;
+    }
+    
+    watchedState.uiState.posts.push({ id: postId, visited: true });
+  });
+
+  elements.modal.addEventListener('show.bs.modal', (e) => {
+    const { id: targetId } = e.relatedTarget.dataset;
+
+    const post = state.posts.find((post) => post.id === targetId);
+
+    watchedState.uiState.modal = {
+      title: post.title,
+      description: post.description,
+      link: post.link,
+    }
+  });
 
   elements.form.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -131,7 +157,7 @@ const app = (i18nextInstance) => {
         };
 
         watchedState.form.state = FORMPROCESSSTATES.finished;
-        console.log(state);
+        
       })
       .catch((e) => {
         watchedState.form.messageObj = {

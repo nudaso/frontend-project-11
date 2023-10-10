@@ -20,7 +20,7 @@ const parsRssStream = (rssString) => {
         link: item.querySelector('link').textContent
       }
     ));
-    
+  
   return {
     feed: {
       title: channelTitle,
